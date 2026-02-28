@@ -61,8 +61,8 @@ void* array_init(size_t elem_size) {
 }
 
 void* array_grow(void *array) {
-  size_t elem_size = array_header(array)->elem_size;
-  size_t new_capacity = array_header(array)->capacity * 2;
+  size_t elem_size = array_elem_size(array);
+  size_t new_capacity = array_capacity(array) * 2;
 
   if (new_capacity < array_capacity(array)) return throw_error("Capacity overflow");
   if (elem_size > SIZE_MAX / new_capacity) return throw_error("Size overflow");
