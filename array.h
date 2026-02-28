@@ -41,14 +41,16 @@ static inline size_t array_capacity(void* array) {
   return array_header(array)->capacity;
 }
 
-void throw_error(char* message) {
+static inline void* throw_error(char* message) {
+#ifdef DEBUG
   fprintf(stderr, "%s\n", message);
-  exit(1);
+#endif
+  return NULL;
 }
 
 void* array_init(size_t elem_size) {
   AlignedHeader* aligned_header = malloc(elem_size * INIT_CAPACITY + sizeof(AlignedHeader));
-  if (aligned_header == NULL) throw_error("Out of memory");
+  if (aligned_header == NULL) return throw_error("Out of memory");
 
   Header* header = &aligned_header->header;
   header->count = 0;
@@ -62,12 +64,12 @@ void* array_grow(void *array) {
   size_t elem_size = array_header(array)->elem_size;
   size_t new_capacity = array_header(array)->capacity * 2;
 
-  if (new_capacity < array_capacity(array)) throw_error("Capacity overflow");
-  if (elem_size > SIZE_MAX / new_capacity) throw_error("Size overflow");
+  if (new_capacity < array_capacity(array)) return throw_error("Capacity overflow");
+  if (elem_size > SIZE_MAX / new_capacity) return throw_error("Size overflow");
 
   AlignedHeader* aligned_header = aligned_array_header(array);
   aligned_header = realloc(aligned_header, elem_size * new_capacity + sizeof(AlignedHeader));
-  if (aligned_header == NULL) throw_error("Out of memory");
+  if (aligned_header == NULL) return throw_error("Out of memory");
 
   aligned_header->header.capacity = new_capacity;
 
