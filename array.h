@@ -1,10 +1,14 @@
 #include "assert.h"
-#include "stdlib.h"
+#include "stdalign.h"
+#include "stddef.h"
 #include "stdio.h"
+#include "stdint.h"
+#include "stdlib.h"
+
 #ifndef ARRAY_H
 #define ARRAY_H
 // To test growing array.
-#define INIT_CAPACITY 1
+#define INIT_CAPACITY 100
 
 typedef struct {
   size_t count;
@@ -12,8 +16,17 @@ typedef struct {
   size_t elem_size;
 } Header;
 
+typedef struct {
+  Header header;
+  _Alignas(max_align_t) unsigned char array[];
+} AlignedHeader;
+
+static inline AlignedHeader* aligned_array_header(void* array) {
+    return (AlignedHeader*)((char*)array - offsetof(AlignedHeader, array));
+}
+
 static inline Header* array_header(void* array) {
-  return ((Header*) array -1);
+    return &aligned_array_header(array)->header;
 }
 
 static inline size_t array_count(void* array) {
@@ -29,26 +42,36 @@ static inline size_t array_capacity(void* array) {
 }
 
 void throw_error(char* message) {
-  fprintf(stderr, "%s", message);
+  fprintf(stderr, "%s\n", message);
   exit(1);
 }
 
 void* array_init(size_t elem_size) {
-  void* array = malloc(elem_size * INIT_CAPACITY + sizeof(Header));
-  if (array == NULL) throw_error("Out of memory");
-  Header* header = ((Header*)array);
+  AlignedHeader* aligned_header = malloc(elem_size * INIT_CAPACITY + sizeof(AlignedHeader));
+  if (aligned_header == NULL) throw_error("Out of memory");
+
+  Header* header = &aligned_header->header;
   header->count = 0;
   header->capacity = INIT_CAPACITY;
   header->elem_size = elem_size;
-  return header + 1;
+
+  return aligned_header->array;
 }
 
 void* array_grow(void *array) {
-  Header* header = array_header(array);
-  header->capacity *= 2;
-  header = realloc(header, header->elem_size * header->capacity + sizeof(Header));
-  if (header == NULL) throw_error("Out of memory");
-  return header + 1;
+  size_t elem_size = array_header(array)->elem_size;
+  size_t new_capacity = array_header(array)->capacity * 2;
+
+  if (new_capacity < array_capacity(array)) throw_error("Capacity overflow");
+  if (elem_size > SIZE_MAX / new_capacity) throw_error("Size overflow");
+
+  AlignedHeader* aligned_header = aligned_array_header(array);
+  aligned_header = realloc(aligned_header, elem_size * new_capacity + sizeof(AlignedHeader));
+  if (aligned_header == NULL) throw_error("Out of memory");
+
+  aligned_header->header.capacity = new_capacity;
+
+  return aligned_header->array;
 }
 
 void array_pop(void* array) {
@@ -86,7 +109,7 @@ void array_free(void* ptr) {
 #ifdef DEBUG
     printf("freeing array at %p (count=%zu)\n", array, array_count(array));
 #endif
-    free(array_header(array));
+    free(aligned_array_header(array));
     *(void**)ptr = NULL;
 }
 

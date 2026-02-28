@@ -88,6 +88,23 @@ int main(void) {
     }
   }
   // doubles goes of scope, is automatically freeed.
+  {
+    typedef struct {
+      long double x;
+    } Big;
+    array(Big) bigs = NULL;
+    Big a = { .x = 2.718281828L };
+    array_push(bigs, a); 
+    array_push(bigs, a); 
+    array_push(bigs, a); 
+
+    array_foreach(bigs, it) {
+      printf("%Lf\n", it->x); 
+    }
+    printf("Header size: %zu\n", sizeof(Header));
+    printf("AlignedHeader size: %zu\n", sizeof(AlignedHeader));
+    printf("long double align: %zu\n", _Alignof(long double));
+  }
 
   return 0;
 }
