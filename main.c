@@ -94,13 +94,24 @@ int main(void) {
     } Big;
     array(Big) bigs = NULL;
     Big a = { .x = 2.718281828L };
-    array_push(bigs, a); 
-    array_push(bigs, a); 
+    Big b = { .x = 3.718281828L };
+    Big c = { .x = 4.718281828L };
+    array_push(bigs, c); 
+    array_push(bigs, b); 
     array_push(bigs, a); 
 
+    array(Big) mapped = NULL;
+    array_map(bigs, mapped, (Big){ .x = it.x * 2.0L });
     array_foreach(bigs, it) {
-      printf("%Lf\n", it->x); 
+      print(it->x); 
     }
+    array(long double) long_doubles = NULL;
+    array_map(mapped, long_doubles, it.x);
+    array_sort(long_doubles);
+    array_foreach(long_doubles, it) {
+      print(*it);
+    }
+
     printf("Header size: %zu\n", sizeof(Header));
     printf("AlignedHeader size: %zu\n", sizeof(AlignedHeader));
     printf("long double align: %zu\n", _Alignof(long double));

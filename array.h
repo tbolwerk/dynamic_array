@@ -8,7 +8,7 @@
 #ifndef ARRAY_H
 #define ARRAY_H
 // To test growing array.
-#define INIT_CAPACITY 100
+#define INIT_CAPACITY 1
 
 typedef struct {
   size_t count;
@@ -115,15 +115,18 @@ void array_free(void* ptr) {
     *(void**)ptr = NULL;
 }
 
+typedef long double long_double;
+
 #define autofree __attribute__((cleanup(array_free)))
 
 #define array(T) autofree T*
 
-#define print(x) _Generic((x), \
-  int:    printf("%d\n", x),   \
-  float:  printf("%f\n", x),   \
-  double: printf("%lf\n",x),   \
-  char*:  printf("%s\n", x)    \
+#define print(x) _Generic((x),      \
+  int:    printf("%d\n", x),        \
+  float:  printf("%f\n", x),        \
+  double: printf("%lf\n",x),        \
+  long_double: printf("%Lf\n",x),   \
+  char*:  printf("%s\n", x)         \
 )
 
 #define define_cmp(T) \
@@ -136,6 +139,7 @@ void array_free(void* ptr) {
     X(int)           \
     X(float)         \
     X(double)        \
+    X(long_double)   \
 
 #define X(T) define_cmp(T)
 TYPES
@@ -144,7 +148,8 @@ TYPES
 #define array_cmp(a) (_Generic((__typeof__(*(a))*)(a),  \
     int*:    cmp_int,                                   \
     float*:  cmp_float,                                 \
-    double*: cmp_double                                 \
+    double*: cmp_double,                                \
+    long_double*: cmp_long_double                       \
 ))
 
 #define array_sort(array) \
